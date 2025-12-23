@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { ImportRecord, User, ViewType, PVItem, Supplier, UserRole, AuditTrailEvent } from '../types';
 import { matchWithWildcardPrefix } from '../utils/businessTime';
@@ -13,6 +12,7 @@ interface Props {
 }
 
 const SUPER_ADMIN_EMAIL = 'carlos.teixeira@imexsolutions.com.br';
+const STORAGE_KEY = 'imex_records';
 
 const STAGES = [
   { id: 'TRIAGEM', label: 'Comercial' },
@@ -21,43 +21,43 @@ const STAGES = [
   { id: 'COMPRAS', label: 'Compras' },
   { id: 'ENGENHARIA', label: 'Eng.' },
   { id: 'FINANCEIRO', label: 'Financeiro' },
-  { id: 'LOGISTICA', label: 'Logística' },
+  { id: 'LOGISTICA', label: 'Logistica' },
   { id: 'FINALIZADO', label: 'Finalizado' }
 ];
 
 const formatCurrency = (val: string | number, currency: string = 'BRL') => {
   const n = typeof val === 'string' ? parseFloat(val.replace(/\./g, '').replace(',', '.')) : val;
-  if (isNaN(n)) return currency === 'BRL' ? 'R$ 0,00' : (currency === 'USD' ? '$ 0.00' : '€ 0.00');
-  return n.toLocaleString(currency === 'BRL' ? 'pt-BR' : 'en-US', { 
-    style: 'currency', 
-    currency: currency 
+  if (isNaN(n)) return currency === 'BRL' ? 'R$ 0,00' : (currency === 'USD' ? '$ 0.00' : 'EUR 0.00');
+  return n.toLocaleString(currency === 'BRL' ? 'pt-BR' : 'en-US', {
+    style: 'currency',
+    currency
   });
 };
 
 const ProcessTimeline = ({ currentStatus }: { currentStatus?: string }) => {
   const currentIndex = STAGES.findIndex(s => s.id === (currentStatus || 'TRIAGEM'));
-  
+
   return (
     <div className="w-full py-6 px-4 mb-8 bg-slate-950/40 rounded-3xl border border-slate-800 shadow-inner">
       <div className="flex items-center justify-between relative max-w-4xl mx-auto">
         <div className="absolute h-0.5 bg-slate-800 left-0 right-0 top-1/2 -translate-y-1/2 z-0"></div>
-        <div 
-          className="absolute h-0.5 bg-emerald-500 transition-all duration-700 ease-in-out left-0 top-1/2 -translate-y-1/2 z-0 shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
+        <div
+          className="absolute h-0.5 bg-emerald-500 transition-all duration-700 ease-in-out left-0 top-1/2 -translate-y-1/2 z-0 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
           style={{ width: `${(currentIndex / (STAGES.length - 1)) * 100}%` }}
         ></div>
-        
+
         {STAGES.map((stage, idx) => {
           const isDone = idx < currentIndex;
           const isCurrent = idx === currentIndex;
-          
+
           return (
             <div key={stage.id} className="relative z-10 flex flex-col items-center gap-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 
-                isCurrent ? 'bg-slate-900 border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-125' : 
+                isDone ? 'bg-emerald-500 border-emerald-500 text-white' :
+                isCurrent ? 'bg-slate-900 border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-125' :
                 'bg-slate-900 border-slate-700 text-slate-600'
               }`}>
-                {isDone ? <span className="text-[10px] font-black">✓</span> : <span className="text-[9px] font-black">{idx + 1}</span>}
+                {isDone ? <span className="text-[9px] font-black">OK</span> : <span className="text-[9px] font-black">{idx + 1}</span>}
               </div>
               <span className={`text-[8px] font-black uppercase tracking-widest ${isCurrent ? 'text-emerald-400' : 'text-slate-500'}`}>
                 {stage.label}
@@ -70,15 +70,31 @@ const ProcessTimeline = ({ currentStatus }: { currentStatus?: string }) => {
   );
 };
 
-const Input = ({ label, value, onChange, type = "text", placeholder = "", disabled = false, isSelect = false, options = [], readonly = false, className = "", required = false, hasError = false }: any) => (
+const Input = ({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+  disabled = false,
+  isSelect = false,
+  options = [],
+  readonly = false,
+  className = "",
+  required = false,
+  hasError = false
+}: any) => (
   <div className={`flex flex-col gap-1 ${className}`}>
     <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${hasError ? 'text-red-500' : 'text-slate-500'}`}>
       {label} {required && <span className="text-red-500">*</span>}
     </label>
+
     {isSelect ? (
-      <select 
+      <select
         disabled={disabled || readonly}
-        className={`w-full px-3 py-2.5 bg-slate-800 text-white border rounded-xl font-bold text-[11px] focus:ring-1 transition-all ${hasError ? 'border-red-500 ring-1 ring-red-500/50' : 'border-slate-700'} ${(disabled || readonly) ? 'opacity-50 cursor-not-allowed bg-slate-900/50' : 'hover:border-emerald-500/50'}`}
+        className={`w-full px-3 py-2.5 bg-slate-800 text-white border rounded-xl font-bold text-[11px] focus:ring-1 transition-all ${
+          hasError ? 'border-red-500 ring-1 ring-red-500/50' : 'border-slate-700'
+        } ${(disabled || readonly) ? 'opacity-50 cursor-not-allowed bg-slate-900/50' : 'hover:border-emerald-500/50'}`}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
       >
@@ -90,16 +106,20 @@ const Input = ({ label, value, onChange, type = "text", placeholder = "", disabl
         ))}
       </select>
     ) : (
-      <input 
+      <input
         type={type}
         disabled={disabled}
         readOnly={readonly}
-        className={`w-full px-3 py-2.5 bg-slate-800 text-white border rounded-xl font-bold text-[11px] focus:ring-1 transition-all placeholder-slate-600 uppercase ${hasError ? 'border-red-500 ring-1 ring-red-500/50' : 'border-slate-700'} ${(disabled || readonly) ? 'opacity-50 cursor-not-allowed bg-slate-900/50' : 'hover:border-emerald-500/50'} ${readonly ? 'bg-slate-900/80 text-emerald-400 border-none shadow-inner' : ''}`}
+        className={`w-full px-3 py-2.5 bg-slate-800 text-white border rounded-xl font-bold text-[11px] focus:ring-1 transition-all placeholder-slate-600 uppercase ${
+          hasError ? 'border-red-500 ring-1 ring-red-500/50' : 'border-slate-700'
+        } ${(disabled || readonly) ? 'opacity-50 cursor-not-allowed bg-slate-900/50' : 'hover:border-emerald-500/50'} ${readonly ? 'bg-slate-900/80 text-emerald-400 border-none shadow-inner' : ''}`}
         style={{ '--tw-ring-color': COLORS.IMEX_GREEN } as any}
         value={value === undefined || value === null ? '' : value}
         placeholder={placeholder}
         onChange={e => {
-          const val = type === 'text' ? e.target.value.toUpperCase().trimStart().replace(/\s\s+/g, ' ') : e.target.value;
+          const val = type === 'text'
+            ? e.target.value.toUpperCase().trimStart().replace(/\s\s+/g, ' ')
+            : e.target.value;
           onChange(val);
         }}
       />
@@ -121,7 +141,12 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
   const isEngenhariaView = view === 'ENGENHARIA';
   const isFinanceiroView = view === 'FINANCEIRO';
   const isLogisticaView = view === 'LOGISTICA';
-  const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN || user.email === SUPER_ADMIN_EMAIL;
+
+  const isAdmin =
+    user.role === UserRole.ADMIN ||
+    user.role === UserRole.SUPER_ADMIN ||
+    user.email === SUPER_ADMIN_EMAIL;
+
   const isViewer = user.role === UserRole.VIEWER;
 
   const activeRecord = useMemo(() => records.find(r => r.id === selectedId), [selectedId, records]);
@@ -133,7 +158,8 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
     } else {
       resetToNew();
     }
-  }, [selectedId, activeRecord]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, activeRecord?.id]);
 
   const isRecordLocked = useMemo(() => {
     if (!activeRecord) return false;
@@ -161,9 +187,9 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
   }, [form.itensPV]);
 
   const tableColumnCount = useMemo(() => {
-    const base = 8; // Item, TAG, Código/Descrição, Qtd, Fornecedor, Moeda, Vlr Unit, Total
+    const base = 8; // Item, TAG, Codigo/Descricao, Qtd, Fornecedor, Moeda, Vlr Unit, Total
     const extraEstoque = isEstoqueView ? 1 : 0;
-    const extraEngineering = isEngenhariaView ? 3 : 0; // Revisão, Obs, Aprovar
+    const extraEngineering = isEngenhariaView ? 3 : 0; // Revisao, Obs, Aprovar
     const extraAction = (isComercialView && !isRecordLocked) ? 1 : 0;
     return base + extraEstoque + extraEngineering + extraAction;
   }, [isEstoqueView, isEngenhariaView, isComercialView, isRecordLocked]);
@@ -189,7 +215,14 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
     if (isRecordLocked) return;
     const newItem: PVItem = {
       id: `man-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      codigo: '', itemCliente: '', tag: '', descricao: '', quantidade: '1', valorUnitario: '0', moeda: 'USD', fornecedor: '',
+      codigo: '',
+      itemCliente: '',
+      tag: '',
+      descricao: '',
+      quantidade: '1',
+      valorUnitario: '0',
+      moeda: 'USD',
+      fornecedor: '',
     };
     setForm(prev => ({ ...prev, itensPV: [...(prev.itensPV || []), newItem] }));
   };
@@ -197,15 +230,26 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
   const updateItem = (id: string, field: keyof PVItem, value: any) => {
     if (isRecordLocked) return;
 
-    // Padroniza: tudo em maiúsculo (campos texto)
-    const textFields: (keyof PVItem)[] = ['codigo', 'descricao', 'tag', 'itemCliente', 'fornecedor', 'statusFabricacao', 'prazoFabricacao', 'stockObservation', 'necessidadeCompra', 'engineeringObservation'];
+    const textFields: (keyof PVItem)[] = [
+      'codigo',
+      'descricao',
+      'tag',
+      'itemCliente',
+      'fornecedor',
+      'statusFabricacao',
+      'prazoFabricacao',
+      'stockObservation',
+      'necessidadeCompra',
+      'engineeringObservation'
+    ];
+
     if (textFields.includes(field) && typeof value === 'string') {
       value = value.toUpperCase().trimStart().replace(/\s\s+/g, ' ');
     }
 
     if (field === 'quantidade' || field === 'estoqueDisponivel') {
       const num = parseFloat(value);
-      if (num < 0) return; 
+      if (num < 0) return;
     }
 
     setForm(prev => ({
@@ -214,17 +258,41 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
     }));
   };
 
+  const makeAuditEvent = (type: AuditTrailEvent['type'], stage: AuditTrailEvent['stage'], summary: string, meta?: any): AuditTrailEvent => {
+    const at = Date.now();
+    return {
+      id: `aud-${at}-${Math.random().toString(36).slice(2, 8)}`,
+      at,
+      atISO: new Date(at).toISOString(),
+      by: user.name,
+      department: user.department,
+      type,
+      stage,
+      summary,
+      meta
+    };
+  };
+
+  const withAudit = (rec: ImportRecord, ev: AuditTrailEvent): ImportRecord => {
+    const trail = Array.isArray((rec as any).auditTrail) ? (rec as any).auditTrail : [];
+    return { ...rec, auditTrail: [ev, ...trail] } as any;
+  };
+
   const approveDrawing = (itemId: string) => {
     if (!isEngenhariaView || isRecordLocked) return;
+
     setForm(prev => {
       let approvedCode = '';
       let nextRev: number | null = null;
+
       const itens = (prev.itensPV || []).map(it => {
         if (it.id !== itemId) return it;
         approvedCode = it.codigo;
+
         const current = (it.engineeringRevisionNumber === undefined || it.engineeringRevisionNumber === null)
           ? null
           : Number(it.engineeringRevisionNumber);
+
         nextRev = (current === null) ? 0 : current + 1;
         return { ...it, engineeringRevisionNumber: nextRev };
       });
@@ -247,78 +315,66 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
 
   const validateForm = () => {
     const errorList: string[] = [];
-    if (!form.PV?.trim()) errorList.push("CÓDIGO PV");
+
+    if (!form.PV?.trim()) errorList.push("CODIGO PV");
     if (!form.Cliente?.trim()) errorList.push("CLIENTE");
     if (!form.PO_Cliente?.trim()) errorList.push("PO CLIENTE");
     if (!form.Data_PV) errorList.push("DATA PV");
-    
+
     if (!form.itensPV?.length) {
       errorList.push("LISTA DE ITENS");
     } else {
       form.itensPV.forEach((it, idx) => {
-        if (!it.codigo?.trim()) errorList.push(`CÓDIGO ITEM #${idx+1}`);
-        if (!it.fornecedor?.trim()) errorList.push(`FORNECEDOR ITEM #${idx+1}`);
-        if (parseNum(it.quantidade) <= 0) errorList.push(`QTD INVÁLIDA ITEM #${idx+1}`);
+        if (!it.codigo?.trim()) errorList.push(`CODIGO ITEM #${idx + 1}`);
+        if (!it.fornecedor?.trim()) errorList.push(`FORNECEDOR ITEM #${idx + 1}`);
+        if (parseNum(it.quantidade) <= 0) errorList.push(`QTD INVALIDA ITEM #${idx + 1}`);
       });
     }
+
     return errorList;
-  };
-
-  const makeAuditEvent = (type: AuditTrailEvent['type'], stage: AuditTrailEvent['stage'], summary: string, meta?: any): AuditTrailEvent => {
-    const at = Date.now();
-    return {
-      id: `aud-${at}-${Math.random().toString(36).slice(2, 8)}`,
-      at,
-      atISO: new Date(at).toISOString(),
-      by: user.name,
-      department: user.department,
-      type,
-      stage,
-      summary,
-      meta
-    };
-  };
-
-  const withAudit = (rec: ImportRecord, ev: AuditTrailEvent): ImportRecord => {
-    const trail = Array.isArray(rec.auditTrail) ? rec.auditTrail : [];
-    return { ...rec, auditTrail: [ev, ...trail] };
   };
 
   const handleSave = async () => {
     if (isViewer || (isRecordLocked && !isAdmin)) {
-      alert("⚠️ PV BLOQUEADO NO FLUXO ATUAL.");
+      alert("ATENCAO: PV BLOQUEADO NO FLUXO ATUAL.");
       return;
     }
 
     const errs = validateForm();
     if (errs.length > 0) {
       setErrors(errs);
-      alert(`⚠️ PENDÊNCIAS OBRIGATÓRIAS:\n\n• ${errs.join('\n• ')}`);
+      alert(`PENDENCIAS OBRIGATORIAS:\n\n- ${errs.join('\n- ')}`);
       return;
     }
 
     try {
       const now = new Date();
-      const storageKey = 'imex_records';
-      const allLatest = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const allLatest = (() => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          const parsed = JSON.parse(raw || '[]');
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      })();
+
       const recordId = (form.id && String(form.id).trim())
         ? String(form.id)
         : `pv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-      const prevStatus = (form.Status_Geral || 'TRIAGEM') as any;
+      const prevStatus = ((form.Status_Geral || 'TRIAGEM') as any);
       let nextStatus = prevStatus;
-      let nextStatusEstoque = form.Status_Estoque || 'PENDENTE';
+      let nextStatusEstoque = (form.Status_Estoque || 'PENDENTE');
 
-      // =============================================================
-      // ✅ Regras por departamento (gate de avanço)
-      // =============================================================
+      // Regras por departamento (gate de avanço)
       if (isComercialView && prevStatus === 'TRIAGEM') {
         nextStatus = 'ESTOQUE';
         nextStatusEstoque = 'PENDENTE';
       }
 
       if (isEstoqueView && prevStatus === 'ESTOQUE') {
-        if (window.confirm("📦 Concluir o GATE de ESTOQUE e enviar para PLANEJAMENTO?")) {
+        if (window.confirm("Concluir o GATE de ESTOQUE e enviar para PLANEJAMENTO?")) {
           nextStatus = 'PLANEJAMENTO';
           nextStatusEstoque = 'CONCLUIDO';
         }
@@ -326,20 +382,20 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
 
       if (isPlanejamentoView && prevStatus === 'PLANEJAMENTO') {
         if (!String((form as any).SC || '').trim()) {
-          alert('⚠️ Informe o número da SC para avançar.');
+          alert('Informe o numero da SC para avancar.');
           return;
         }
-        if (window.confirm("🧠 Concluir PLANEJAMENTO e enviar para COMPRAS?")) {
+        if (window.confirm("Concluir PLANEJAMENTO e enviar para COMPRAS?")) {
           nextStatus = 'COMPRAS';
         }
       }
 
       if (isComprasView && prevStatus === 'COMPRAS') {
         if (!String((form as any).PO || '').trim()) {
-          alert('⚠️ Informe o número da PO para avançar.');
+          alert('Informe o numero da PO para avancar.');
           return;
         }
-        if (window.confirm("🧾 Concluir COMPRAS e enviar para ENGENHARIA (aprovação de desenho)?")) {
+        if (window.confirm("Concluir COMPRAS e enviar para ENGENHARIA (aprovacao de desenho)?")) {
           nextStatus = 'ENGENHARIA';
         }
       }
@@ -348,26 +404,26 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
         const itens = (form.itensPV || []);
         const pend = itens.filter(it => it.engineeringRevisionNumber === undefined || it.engineeringRevisionNumber === null);
         if (pend.length > 0) {
-          alert(`⚠️ Ainda existem itens sem aprovação de desenho (Revisão não definida):\n\n• ${pend.map(p => p.codigo).join('\n• ')}`);
+          alert(`Ainda existem itens sem aprovacao de desenho (revisao nao definida):\n\n- ${pend.map(p => p.codigo).join('\n- ')}`);
           return;
         }
-        if (window.confirm("📐 Concluir ENGENHARIA e enviar para FINANCEIRO?")) {
+        if (window.confirm("Concluir ENGENHARIA e enviar para FINANCEIRO?")) {
           nextStatus = 'FINANCEIRO';
         }
       }
 
       if (isFinanceiroView && prevStatus === 'FINANCEIRO') {
         if (!String((form as any).Status_Pagamento || '').trim()) {
-          alert('⚠️ Selecione o Status de Pagamento para avançar.');
+          alert('Selecione o Status de Pagamento para avancar.');
           return;
         }
-        if (window.confirm("💳 Concluir FINANCEIRO e enviar para LOGÍSTICA?")) {
+        if (window.confirm("Concluir FINANCEIRO e enviar para LOGISTICA?")) {
           nextStatus = 'LOGISTICA';
         }
       }
 
       if (isLogisticaView && prevStatus === 'LOGISTICA') {
-        if (window.confirm("🚚 Concluir LOGÍSTICA e FINALIZAR o processo?")) {
+        if (window.confirm("Concluir LOGISTICA e FINALIZAR o processo?")) {
           nextStatus = 'FINALIZADO';
         }
       }
@@ -391,60 +447,74 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
         Status_Geral: nextStatus as any,
         Status_Estoque: nextStatusEstoque as any,
         Data_Lancamento_PV: form.Data_Lancamento_PV || now.toISOString(),
-      };
+      } as any;
 
       // timestamps de entrada por etapa (quando muda)
       if (prevStatus !== nextStatus) {
-        if (nextStatus === 'ESTOQUE') baseRecord.Data_Entrada_Estoque = baseRecord.Data_Entrada_Estoque || now.toISOString();
-        if (nextStatus === 'COMPRAS') baseRecord.Data_Entrada_Compras = baseRecord.Data_Entrada_Compras || now.toISOString();
-        if (nextStatus === 'FINANCEIRO') baseRecord.Data_Entrada_Financeiro = baseRecord.Data_Entrada_Financeiro || now.toISOString();
+        if (nextStatus === 'ESTOQUE') (baseRecord as any).Data_Entrada_Estoque = (baseRecord as any).Data_Entrada_Estoque || now.toISOString();
+        if (nextStatus === 'PLANEJAMENTO') (baseRecord as any).Data_Entrada_Planejamento = (baseRecord as any).Data_Entrada_Planejamento || now.toISOString();
+        if (nextStatus === 'COMPRAS') (baseRecord as any).Data_Entrada_Compras = (baseRecord as any).Data_Entrada_Compras || now.toISOString();
+        if (nextStatus === 'ENGENHARIA') (baseRecord as any).Data_Entrada_Engenharia = (baseRecord as any).Data_Entrada_Engenharia || now.toISOString();
+        if (nextStatus === 'FINANCEIRO') (baseRecord as any).Data_Entrada_Financeiro = (baseRecord as any).Data_Entrada_Financeiro || now.toISOString();
+        if (nextStatus === 'LOGISTICA') (baseRecord as any).Data_Entrada_Logistica = (baseRecord as any).Data_Entrada_Logistica || now.toISOString();
+        if (nextStatus === 'FINALIZADO') (baseRecord as any).Data_Finalizado = (baseRecord as any).Data_Finalizado || now.toISOString();
       }
 
       const evType: AuditTrailEvent['type'] = prevStatus !== nextStatus ? 'STATUS_UPDATE' : 'STAGE_SAVE';
       const evStage: AuditTrailEvent['stage'] = (view as any) === 'COMERCIAL' ? 'COMERCIAL' : (view as any);
+
+      // Hardening audit summary: sem caracteres que quebram encoding (usa "->")
       const evSummary = prevStatus !== nextStatus
-        ? `Fluxo atualizado: ${prevStatus} → ${nextStatus}`
-        : `Registro atualizado no módulo ${view}`;
-      const updatedRecord = withAudit(baseRecord, makeAuditEvent(evType, evStage, evSummary, { prevStatus, nextStatus }));
+        ? `Fluxo atualizado: ${prevStatus} -> ${nextStatus}`
+        : `Registro atualizado no modulo ${view}`;
+
+      const updatedRecord = withAudit(
+        baseRecord,
+        makeAuditEvent(evType, evStage, evSummary, { prevStatus, nextStatus })
+      );
 
       const finalRecords = allLatest.some((r: any) => r.id === recordId)
         ? allLatest.map((r: any) => r.id === recordId ? updatedRecord : r)
         : [updatedRecord, ...allLatest];
-      
-      localStorage.setItem(storageKey, JSON.stringify(finalRecords));
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalRecords));
       setRecords(finalRecords);
-      
-      alert(`✅ SINCRONIZADO!\nPV: ${form.PV}\nLocalização Atual: ${nextStatus}`);
+
+      alert(`OK - SINCRONIZADO!\nPV: ${form.PV}\nLocalizacao Atual: ${nextStatus}`);
       resetToNew();
-    } catch (e) {
-      alert("❌ ERRO AO ACESSAR STORAGE.");
+    } catch {
+      alert("ERRO AO ACESSAR STORAGE.");
     }
   };
 
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || isRecordLocked) return;
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const lines = (event.target?.result as string).split('\n');
-      const start = lines[0].includes('sep=') ? 2 : 1;
+      const start = lines[0]?.includes('sep=') ? 2 : 1;
+
       const newItems = lines.slice(start).filter(l => l.trim()).map((line, idx) => {
         const cols = line.split(';');
-        return { 
-          id: `imp-${Date.now()}-${idx}`, 
-          itemCliente: cols[0]?.trim() || '', 
-          tag: cols[1]?.toUpperCase() || '', 
-          codigo: cols[2]?.toUpperCase() || '', 
-          descricao: cols[3]?.toUpperCase() || '', 
-          quantidade: Math.max(1, parseFloat(cols[4]) || 1).toString(), 
-          moeda: (cols[5]?.toUpperCase() as any) || 'USD', 
-          valorUnitario: cols[6]?.replace(',', '.') || '0', 
+        return {
+          id: `imp-${Date.now()}-${idx}`,
+          itemCliente: cols[0]?.trim() || '',
+          tag: cols[1]?.toUpperCase() || '',
+          codigo: cols[2]?.toUpperCase() || '',
+          descricao: cols[3]?.toUpperCase() || '',
+          quantidade: Math.max(1, parseFloat(cols[4]) || 1).toString(),
+          moeda: (cols[5]?.toUpperCase() as any) || 'USD',
+          valorUnitario: cols[6]?.replace(',', '.') || '0',
           fornecedor: cols[7]?.toUpperCase() || ''
         };
       });
+
       setForm(f => ({ ...f, itensPV: [...(f.itensPV || []), ...newItems] }));
       if (csvInputRef.current) csvInputRef.current.value = '';
     };
+
     reader.readAsText(file);
   };
 
@@ -482,7 +552,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
 
   return (
     <div className="space-y-4 lg:space-y-8 animate-in fade-in pb-10">
-      
+
       {selectedId && (
         <div className={`p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between shadow-lg transition-all ${isRecordLocked ? 'bg-amber-500 border-amber-600 text-slate-950' : 'bg-slate-900 border-slate-800 text-white'}`}>
           <div className="flex items-center gap-4">
@@ -492,7 +562,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                 {isRecordLocked ? `MODO CONSULTA: PV EM ${activeRecord?.Status_Geral}` : `OPERANDO EM: ${view} - PV: ${activeRecord?.PV}`}
               </p>
               <p className="text-[9px] font-bold uppercase opacity-80">
-                {isRecordLocked ? 'Somente o departamento responsável pode alterar dados neste estágio.' : 'Sincronização mestre ativa v4.1.0.'}
+                {isRecordLocked ? 'Somente o departamento responsavel pode alterar dados neste estagio.' : 'Sincronizacao mestre ativa v4.1.0.'}
               </p>
             </div>
           </div>
@@ -500,7 +570,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
       )}
 
       <div className="bg-slate-900 rounded-2xl lg:rounded-[3rem] shadow-2xl border border-slate-800 overflow-hidden">
-        
+
         <div className="px-6 py-5 lg:px-10 lg:py-8 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-950/40">
           <div className="flex items-center gap-4 lg:gap-6">
             <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl flex items-center justify-center border border-white/10 ${isComercialView ? 'bg-[#04816E]/10 text-[#04816E]' : 'bg-blue-500/10 text-blue-400'}`}>
@@ -513,7 +583,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
               <p className="text-slate-500 text-[8px] lg:text-[10px] font-bold uppercase tracking-widest italic">Precision v4.1.0 Integrity</p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {isComercialView && (
               <>
@@ -537,27 +607,41 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
         </div>
 
         <div className="p-4 lg:p-10 space-y-6 lg:space-y-10">
-          
+
           {selectedId && <ProcessTimeline currentStatus={activeRecord?.Status_Geral} />}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Localizar Registro na Fila</label>
+
               {!isComercialView ? (
-                <select 
+                <select
                   className="w-full bg-slate-800 text-white border border-slate-700 rounded-xl px-4 py-3 text-xs font-bold uppercase focus:border-emerald-500 outline-none"
                   value={selectedId || ''}
                   onChange={e => setSelectedId(e.target.value)}
                 >
-                  <option value="">AGUARDANDO AÇÃO OPERACIONAL...</option>
+                  <option value="">AGUARDANDO ACAO OPERACIONAL...</option>
                   {masterQueue.map(r => <option key={r.id} value={r.id}>{r.PV} - {r.Cliente} ({r.Status_Geral})</option>)}
                 </select>
               ) : (
                 <div className="relative">
-                  <input className="w-full bg-slate-800 text-white border border-slate-700 rounded-xl px-4 py-3 text-xs font-bold uppercase outline-none focus:border-emerald-500" placeholder="LOCALIZAR PV PARA ALTERAÇÃO..." value={searchPV} onChange={e => setSearchPV(e.target.value)} />
+                  <input
+                    className="w-full bg-slate-800 text-white border border-slate-700 rounded-xl px-4 py-3 text-xs font-bold uppercase outline-none focus:border-emerald-500"
+                    placeholder="LOCALIZAR PV PARA ALTERACAO..."
+                    value={searchPV}
+                    onChange={e => setSearchPV(e.target.value)}
+                  />
                   {searchPV && masterSearch(searchPV).length > 0 && (
                     <div className="absolute top-full left-0 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
-                      {masterSearch(searchPV).map(r => <button key={r.id} onClick={() => { setSelectedId(r.id); setSearchPV(''); }} className="w-full px-4 py-3 text-left hover:bg-emerald-500/10 border-b border-slate-700 text-white font-black text-xs block">{r.PV} - {r.Cliente}</button>)}
+                      {masterSearch(searchPV).map(r => (
+                        <button
+                          key={r.id}
+                          onClick={() => { setSelectedId(r.id); setSearchPV(''); }}
+                          className="w-full px-4 py-3 text-left hover:bg-emerald-500/10 border-b border-slate-700 text-white font-black text-xs block"
+                        >
+                          {r.PV} - {r.Cliente}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -566,16 +650,13 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-            <Input label="Código PV" required readonly={!isComercialView || isRecordLocked} value={form.PV} onChange={(v:any) => setForm({...form, PV: v})} hasError={errors.includes("CÓDIGO PV")} />
+            <Input label="Codigo PV" required readonly={!isComercialView || isRecordLocked} value={form.PV} onChange={(v:any) => setForm({...form, PV: v})} hasError={errors.includes("CODIGO PV")} />
             <Input label="Cliente" required readonly={!isComercialView || isRecordLocked} value={form.Cliente} onChange={(v:any) => setForm({...form, Cliente: v})} hasError={errors.includes("CLIENTE")} />
             <Input label="PO Cliente" required readonly={!isComercialView || isRecordLocked} value={form.PO_Cliente} onChange={(v:any) => setForm({...form, PO_Cliente: v})} hasError={errors.includes("PO CLIENTE")} />
             <Input label="Data PV" required type="date" readonly={!isComercialView || isRecordLocked} value={form.Data_PV} onChange={(v:any) => setForm({...form, Data_PV: v})} hasError={errors.includes("DATA PV")} />
             <Input label="Prazo (Dias)" required readonly={isRecordLocked} value={form.Prazo_Contrato} onChange={(v:any) => setForm({...form, Prazo_Contrato: v})} />
           </div>
 
-          {/* =============================================================
-              🔁 Campos por etapa (sem mexer no layout do Comercial)
-             ============================================================= */}
           {(isEstoqueView || isPlanejamentoView || isComprasView || isEngenhariaView || isFinanceiroView || isLogisticaView) && (
             <div className="mt-6 p-5 rounded-2xl bg-slate-950/30 border border-slate-800">
               <div className="flex items-center justify-between mb-4">
@@ -586,7 +667,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
               {isEstoqueView && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Observações Estoque (Gate)</label>
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Observacoes Estoque (Gate)</label>
                     <textarea
                       className="w-full min-h-[44px] bg-slate-800 text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-600/30 uppercase"
                       placeholder="Ex: SEM ESTOQUE / COM ESTOQUE / RESERVADO / NECESSITA COMPRA..."
@@ -607,7 +688,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
               {isPlanejamentoView && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Input
-                    label="Número SC"
+                    label="Numero SC"
                     required
                     readonly={isRecordLocked}
                     value={(form as any).SC || ''}
@@ -621,7 +702,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                     onChange={(v:any) => setForm({ ...form, Data_SC: v })}
                   />
                   <div className="sm:col-span-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Responsável Planejamento</label>
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Responsavel Planejamento</label>
                     <div className="px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-black text-[10px] uppercase">
                       {(form as any).Responsavel_Planejamento || user.name}
                     </div>
@@ -632,7 +713,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
               {isComprasView && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Input
-                    label="Número PO"
+                    label="Numero PO"
                     required
                     readonly={isRecordLocked}
                     value={(form as any).PO || ''}
@@ -658,16 +739,16 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                     </select>
                   </div>
                   <Input
-                    label="Condição Pagamento"
+                    label="Condicao Pagamento"
                     readonly={isRecordLocked}
                     value={(form as any).Condicao_Pagamento || ''}
                     onChange={(v:any) => setForm({ ...form, Condicao_Pagamento: v })}
                   />
                   <div className="sm:col-span-2 lg:col-span-4">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Detalhe Condição / Observações Compras</label>
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Detalhe Condicao / Observacoes Compras</label>
                     <textarea
                       className="w-full min-h-[44px] bg-slate-800 text-white px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-600/30 uppercase"
-                      placeholder="Ex: 15% ADIANTAMENTO / 85% APÓS INSPEÇÃO..."
+                      placeholder="Ex: 15% ADIANTAMENTO / 85% APOS INSPECAO..."
                       readOnly={isRecordLocked}
                       value={(form as any).Condicao_Pagamento_Detalhe || ''}
                       onChange={(e) => setForm({ ...form, Condicao_Pagamento_Detalhe: e.target.value.toUpperCase() })}
@@ -678,11 +759,11 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
 
               {isEngenhariaView && (
                 <div className="text-slate-300 text-[11px] leading-relaxed">
-                  <p className="font-black text-white uppercase tracking-widest text-[10px] mb-2">Controle de Revisão (Desenhos)</p>
-                  <p>Ao clicar em <span className="font-black text-emerald-400">APROVAR DESENHO</span> no item, o sistema grava a revisão:</p>
+                  <p className="font-black text-white uppercase tracking-widest text-[10px] mb-2">Controle de Revisao (Desenhos)</p>
+                  <p>Ao clicar em <span className="font-black text-emerald-400">APROVAR DESENHO</span> no item, o sistema grava a revisao:</p>
                   <ul className="list-disc pl-5 mt-2 space-y-1 text-slate-400">
-                    <li>Primeira aprovação: <span className="font-black">Revisão 0</span></li>
-                    <li>Próximas aprovações: incrementa para Revisão 1, Revisão 2, ...</li>
+                    <li>Primeira aprovacao: <span className="font-black">Revisao 0</span></li>
+                    <li>Proximas aprovacoes: incrementa para Revisao 1, Revisao 2, ...</li>
                   </ul>
                 </div>
               )}
@@ -720,9 +801,9 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                       onChange={(e) => setForm({ ...form, Modal: e.target.value })}
                     >
                       <option value="">SELECIONE...</option>
-                      <option value="AEREO">AÉREO</option>
-                      <option value="MARITIMO">MARÍTIMO</option>
-                      <option value="RODOVIARIO">RODOVIÁRIO</option>
+                      <option value="AEREO">AEREO</option>
+                      <option value="MARITIMO">MARITIMO</option>
+                      <option value="RODOVIARIO">RODOVIARIO</option>
                     </select>
                   </div>
                   <Input label="ETD" type="date" readonly={isRecordLocked} value={(form as any).ETD || ''} onChange={(v:any) => setForm({ ...form, ETD: v })} />
@@ -742,7 +823,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                 </button>
               )}
             </div>
-            
+
             <div className="relative">
               <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/20 custom-scrollbar">
                 <table className="w-full text-left text-[10px] lg:text-[11px] min-w-[1300px]">
@@ -750,13 +831,13 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                     <tr className="bg-slate-950 text-slate-500 font-black uppercase tracking-widest border-b border-slate-800">
                       <th className="px-6 py-4 w-24">Item #</th>
                       <th className="px-6 py-4 w-40">NM / TAG</th>
-                      <th className="px-6 py-4">Código / Descrição</th>
+                      <th className="px-6 py-4">Codigo / Descricao</th>
                       <th className="px-6 py-4 text-center w-24">Qtd PV</th>
                       {isEstoqueView && <th className="px-6 py-4 text-amber-500 text-center w-28">Estoque</th>}
                       <th className="px-6 py-4">Fornecedor</th>
                       {isEngenhariaView && (
                         <>
-                          <th className="px-6 py-4 text-center w-28">Revisão</th>
+                          <th className="px-6 py-4 text-center w-28">Revisao</th>
                           <th className="px-6 py-4">Obs Eng.</th>
                           <th className="px-6 py-4 text-center w-40">Aprovar</th>
                         </>
@@ -764,22 +845,25 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                       <th className="px-6 py-4 text-center w-28">Moeda</th>
                       <th className="px-6 py-4 text-right w-32">Vlr Unit</th>
                       <th className="px-6 py-4 text-right w-32">Total Item</th>
-                      {isComercialView && !isRecordLocked && <th className="px-6 py-4 text-center w-20">Ação</th>}
+                      {isComercialView && !isRecordLocked && <th className="px-6 py-4 text-center w-20">Acao</th>}
                     </tr>
                   </thead>
+
                   <tbody className="divide-y divide-slate-800">
                     {(form.itensPV || []).map((item, idx) => (
                       <tr key={item.id} className="hover:bg-slate-800/30 transition-all">
                         <td className="px-6 py-4 font-black text-slate-500">
                           {isComercialView && !isRecordLocked ? (
                             <input className="bg-slate-800 text-white px-3 py-1.5 rounded-lg w-full border border-slate-700" value={item.itemCliente} onChange={e => updateItem(item.id, 'itemCliente', e.target.value)} />
-                          ) : `#${item.itemCliente || idx+1}`}
+                          ) : `#${item.itemCliente || idx + 1}`}
                         </td>
+
                         <td className="px-6 py-4">
                           {isComercialView && !isRecordLocked ? (
                             <input className="bg-slate-800 text-slate-400 px-3 py-1.5 rounded-lg w-full border border-slate-700 font-bold uppercase" value={item.tag} onChange={e => updateItem(item.id, 'tag', e.target.value)} />
                           ) : <span className="text-slate-500 font-black uppercase">{item.tag || '---'}</span>}
                         </td>
+
                         <td className="px-6 py-4">
                           {isComercialView && !isRecordLocked ? (
                             <div className="space-y-1">
@@ -787,19 +871,36 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                               <input className="bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg w-full border border-slate-700 uppercase" value={item.descricao} onChange={e => updateItem(item.id, 'descricao', e.target.value)} />
                             </div>
                           ) : (
-                            <div><span className="text-white font-black block">{item.codigo}</span><span className="text-slate-500 uppercase">{item.descricao}</span></div>
+                            <div>
+                              <span className="text-white font-black block">{item.codigo}</span>
+                              <span className="text-slate-500 uppercase">{item.descricao}</span>
+                            </div>
                           )}
                         </td>
+
                         <td className="px-6 py-4 text-center">
                           {isComercialView && !isRecordLocked ? (
                             <input type="number" min="1" className="w-16 bg-slate-800 text-white p-1.5 rounded-lg border border-slate-700 text-center font-black" value={item.quantidade} onChange={e => updateItem(item.id, 'quantidade', e.target.value)} />
                           ) : <span className="text-white font-black">{item.quantidade}</span>}
                         </td>
+
                         {isEstoqueView && (
                           <td className="px-6 py-4 text-center">
-                            <input type="number" min="0" className="w-16 bg-slate-900 text-amber-500 p-1.5 rounded-lg border border-amber-500/30 text-center font-black" value={item.estoqueDisponivel || '0'} onChange={e => updateItem(item.id, 'estoqueDisponivel', e.target.value)} />
+                            <input
+                              type="number"
+                              min="0"
+                              disabled={isRecordLocked}
+                              className={`w-16 p-1.5 rounded-lg text-center font-black ${
+                                isRecordLocked
+                                  ? 'bg-slate-900 text-amber-300/60 border border-amber-500/10 opacity-60 cursor-not-allowed'
+                                  : 'bg-slate-900 text-amber-500 border border-amber-500/30'
+                              }`}
+                              value={item.estoqueDisponivel || '0'}
+                              onChange={e => updateItem(item.id, 'estoqueDisponivel', e.target.value)}
+                            />
                           </td>
                         )}
+
                         <td className="px-6 py-4">
                           {isComercialView && !isRecordLocked ? (
                             <select className="bg-slate-800 text-white p-2 rounded-lg border border-slate-700 w-full font-bold" value={item.fornecedor} onChange={e => updateItem(item.id, 'fornecedor', e.target.value)}>
@@ -808,6 +909,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                             </select>
                           ) : <span className="text-emerald-500 font-black uppercase">{item.fornecedor || '---'}</span>}
                         </td>
+
                         {isEngenhariaView && (
                           <>
                             <td className="px-6 py-4 text-center">
@@ -815,15 +917,17 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                                 {item.engineeringRevisionNumber === undefined || item.engineeringRevisionNumber === null ? 'PENDENTE' : `REV ${item.engineeringRevisionNumber}`}
                               </span>
                             </td>
+
                             <td className="px-6 py-4">
                               <input
                                 className="bg-slate-800 text-white px-3 py-1.5 rounded-lg w-full border border-slate-700 uppercase"
-                                placeholder="OBSERVAÇÃO (OPCIONAL)"
+                                placeholder="OBSERVACAO (OPCIONAL)"
                                 readOnly={isRecordLocked}
                                 value={item.engineeringObservation || ''}
                                 onChange={e => updateItem(item.id, 'engineeringObservation', e.target.value)}
                               />
                             </td>
+
                             <td className="px-6 py-4 text-center">
                               <button
                                 type="button"
@@ -836,6 +940,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                             </td>
                           </>
                         )}
+
                         <td className="px-6 py-4 text-center">
                           {isComercialView && !isRecordLocked ? (
                             <select className="bg-slate-800 text-white p-1.5 rounded-lg border border-slate-700 font-bold" value={item.moeda} onChange={e => updateItem(item.id, 'moeda', e.target.value as any)}>
@@ -845,14 +950,17 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                             </select>
                           ) : <span className="text-white font-black">{item.moeda}</span>}
                         </td>
+
                         <td className="px-6 py-4 text-right">
                           {isComercialView && !isRecordLocked ? (
                             <input type="number" className="w-24 bg-slate-800 text-white p-1.5 rounded-lg border border-slate-700 font-black text-right" value={item.valorUnitario} onChange={e => updateItem(item.id, 'valorUnitario', e.target.value)} />
                           ) : <span className="text-white font-bold">{formatCurrency(item.valorUnitario, item.moeda)}</span>}
                         </td>
+
                         <td className="px-6 py-4 text-right text-emerald-400 font-black">
                           {formatCurrency(parseNum(item.quantidade) * parseNum(item.valorUnitario), item.moeda)}
                         </td>
+
                         {isComercialView && !isRecordLocked && (
                           <td className="px-6 py-4 text-center">
                             <button onClick={() => setForm(f => ({...f, itensPV: f.itensPV?.filter(it => it.id !== item.id)}))} className="text-slate-500 hover:text-red-500 transition-colors">{ICONS.Close}</button>
@@ -861,11 +969,13 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                       </tr>
                     ))}
                   </tbody>
+
                   <tfoot className="bg-slate-950/80 border-t border-slate-700">
                     <tr>
-                        <td colSpan={Math.max(1, tableColumnCount - 3)} className="px-6 py-6 text-right">
+                      <td colSpan={Math.max(1, tableColumnCount - 3)} className="px-6 py-6 text-right">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Valores Consolidados do Pedido:</span>
                       </td>
+
                       <td colSpan={3} className="px-6 py-6 text-right">
                         <div className="flex flex-col gap-2">
                           {totalsByCurrency.USD > 0 && (
@@ -891,6 +1001,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
                           )}
                         </div>
                       </td>
+
                       {isComercialView && !isRecordLocked && <td></td>}
                     </tr>
                   </tfoot>
@@ -901,15 +1012,16 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
 
           <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex flex-col items-center sm:items-start text-slate-500 text-[9px] font-black uppercase tracking-widest">
-               <span>Imex Sentinel v4.1.0 Precision Master</span>
-               {selectedId && <span className="text-emerald-500 animate-pulse mt-1">Sincronização em Tempo Real</span>}
+              <span>Imex Sentinel v4.1.0 Precision Master</span>
+              {selectedId && <span className="text-emerald-500 animate-pulse mt-1">Sincronizacao em Tempo Real</span>}
             </div>
-            
+
             {(!isRecordLocked || isAdmin) && selectedId && (
               <button onClick={handleSave} className="w-full sm:w-auto px-16 py-4 bg-[#04816E] text-white rounded-2xl font-black text-xs uppercase tracking-[3px] shadow-2xl hover:bg-emerald-500 active:scale-95 transition-all">
-                SINCRONIZAR E AVANÇAR PROCESSO
+                SINCRONIZAR E AVANCAR PROCESSO
               </button>
             )}
+
             {isComercialView && !selectedId && (
               <button onClick={handleSave} className="w-full sm:w-auto px-16 py-4 bg-[#04816E] text-white rounded-2xl font-black text-xs uppercase tracking-[3px] shadow-2xl hover:bg-emerald-500 active:scale-95 transition-all">
                 CRIAR NOVO PEDIDO MESTRE
