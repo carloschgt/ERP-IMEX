@@ -1,23 +1,30 @@
-
 export enum UserRole {
   ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
   USER = 'USER',
-  VIEWER = 'VIEWER'
+  VIEWER = 'VIEWER',
 }
 
 export interface User {
   email: string;
   name: string;
   role: UserRole;
-  department: 'COMERCIAL' | 'COMPRAS' | 'FINANCEIRO' | 'LOGISTICA' | 'ESTOQUE' | 'PLANEJAMENTO' | 'ENGENHARIA' | 'ADMIN';
+  department:
+    | 'COMERCIAL'
+    | 'COMPRAS'
+    | 'FINANCEIRO'
+    | 'LOGISTICA'
+    | 'ESTOQUE'
+    | 'PLANEJAMENTO'
+    | 'ENGENHARIA'
+    | 'ADMIN';
   lastLogin?: string;
   password?: string;
   passwordChangedAt?: string;
 }
 
 export interface SLAConfig {
-  estoque: number; // Horas Úteis
+  estoque: number; // Horas Uteis
   compras: number; // Dias
   financeiro: number; // Dias
   logistica: number; // Dias
@@ -37,8 +44,23 @@ export interface AuditTrailEvent {
   atISO: string;
   by: string;
   department: string;
-  type: 'STAGE_SAVE' | 'DOC_UPLOAD' | 'STATUS_UPDATE' | 'ENGINEERING_REVIEW' | 'PAYMENT_PLAN' | 'PAYMENT_DONE' | 'STAGE_REOPEN' | 'READONLY_OVERRIDE';
-  stage: 'COMERCIAL' | 'ESTOQUE' | 'PLANEJAMENTO' | 'COMPRAS' | 'ENGENHARIA' | 'FINANCEIRO' | 'LOGISTICA';
+  type:
+    | 'STAGE_SAVE'
+    | 'DOC_UPLOAD'
+    | 'STATUS_UPDATE'
+    | 'ENGINEERING_REVIEW'
+    | 'PAYMENT_PLAN'
+    | 'PAYMENT_DONE'
+    | 'STAGE_REOPEN'
+    | 'READONLY_OVERRIDE';
+  stage:
+    | 'COMERCIAL'
+    | 'ESTOQUE'
+    | 'PLANEJAMENTO'
+    | 'COMPRAS'
+    | 'ENGENHARIA'
+    | 'FINANCEIRO'
+    | 'LOGISTICA';
   summary: string;
   meta?: any;
 }
@@ -82,16 +104,23 @@ export interface PVItem {
   tag?: string; // NM/TAG
   descricao: string;
   quantidade: string;
+
+  // Estoque
   estoqueDisponivel?: string;
   necessidadeCompra?: string;
   stockObservation?: string;
-  valorUnitario: string; 
-  valorUnitarioCompra?: string; // Preço negociado pelo Compras
+
+  // Valores
+  valorUnitario: string;
+  valorUnitarioCompra?: string; // Preco negociado pelo Compras
   moeda: 'USD' | 'BRL' | 'EUR';
   fornecedor: string;
+
+  // Fabricacao
   statusFabricacao?: string;
-  prazoFabricacao?: string; // Prazo individual por item (Dias)
-  // Campos Engenharia
+  prazoFabricacao?: string; // Dias
+
+  // Engenharia
   engineeringReviewedAt?: string;
   engineeringReviewedBy?: string;
   engineeringReviewAcknowledgedAt?: string;
@@ -111,10 +140,10 @@ export interface ImportRecord {
   Cliente: string;
   Data_PV: string;
   Data_Lancamento_PV: string; // ISO
-  Prazo_Contrato: string; 
-  PO_Cliente?: string; 
-  
-  // Auditoria e Histórico
+  Prazo_Contrato: string;
+  PO_Cliente?: string;
+
+  // Auditoria e Historico
   auditTrail: AuditTrailEvent[];
   attachments: Attachment[];
   paymentRequests: PaymentRequest[];
@@ -133,11 +162,11 @@ export interface ImportRecord {
   Data_SC?: string;
   Responsavel_Planejamento?: string;
 
-  // Compras & Suprimentos
+  // Compras
   Data_Entrada_Compras?: string;
   PO?: string;
   Data_PO?: string;
-  PC?: string; 
+  PC?: string;
   Data_PC?: string;
   Fornecedor_PO?: string;
   Condicao_Pagamento?: string;
@@ -153,14 +182,14 @@ export interface ImportRecord {
   Data_Adiantamento?: string;
   Valor_Complemento?: string;
   Valor_Reembolso?: string;
-  
-  // Produção
+
+  // Producao
   Status_Fabricacao?: string;
-  Status_Geral_Producao?: string; // NOVO: Para controle consolidado
+  Status_Geral_Producao?: string;
   Inicio_Fabricacao?: string;
   Previsao_Conclusao?: string;
-  
-  // Logística
+
+  // Logistica
   Modal?: string;
   ETA?: string;
   ETD?: string;
@@ -177,12 +206,12 @@ export interface ImportRecord {
   Usuario_Ult_Alteracao: string;
   Data_Ult_Alteracao: string;
 
-  // Itens Detalhados
+  // Itens
   itensPV: PVItem[];
   Itens_PV?: string;
   Status_Escopo?: 'INTEGRAL' | 'PARCIAL';
 
-  // Gestão de Crise (Intervenção Super Admin)
+  // Intervencao Super Admin
   Intervencao_Admin?: boolean;
   Data_Intervencao?: string;
   Motivo_Intervencao?: string;
@@ -190,4 +219,17 @@ export interface ImportRecord {
   reopenedAt?: string;
 }
 
-export type ViewType = 'DASHBOARD' | 'COMERCIAL' | 'ESTOQUE' | 'PLANEJAMENTO' | 'COMPRAS' | 'ENGENHARIA' | 'FINANCEIRO' | 'LOGISTICA' | 'ADMIN' | 'SLA_CONFIG' | 'FORNECEDORES' | 'SUPER_ADMIN_PANEL' | 'ESTOQUE_TV';
+export type ViewType =
+  | 'DASHBOARD'
+  | 'COMERCIAL'
+  | 'ESTOQUE'
+  | 'PLANEJAMENTO'
+  | 'COMPRAS'
+  | 'ENGENHARIA'
+  | 'FINANCEIRO'
+  | 'LOGISTICA'
+  | 'ADMIN'
+  | 'SLA_CONFIG'
+  | 'FORNECEDORES'
+  | 'SUPER_ADMIN_PANEL'
+  | 'ESTOQUE_TV';

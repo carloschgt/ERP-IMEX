@@ -654,7 +654,14 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
             <Input label="Cliente" required readonly={!isComercialView || isRecordLocked} value={form.Cliente} onChange={(v:any) => setForm({...form, Cliente: v})} hasError={errors.includes("CLIENTE")} />
             <Input label="PO Cliente" required readonly={!isComercialView || isRecordLocked} value={form.PO_Cliente} onChange={(v:any) => setForm({...form, PO_Cliente: v})} hasError={errors.includes("PO CLIENTE")} />
             <Input label="Data PV" required type="date" readonly={!isComercialView || isRecordLocked} value={form.Data_PV} onChange={(v:any) => setForm({...form, Data_PV: v})} hasError={errors.includes("DATA PV")} />
-            <Input label="Prazo (Dias)" required readonly={isRecordLocked} value={form.Prazo_Contrato} onChange={(v:any) => setForm({...form, Prazo_Contrato: v})} />
+            <Input
+  label="Prazo (Dias)"
+  required
+  readonly={(!isComercialView || (activeRecord?.Status_Geral && activeRecord?.Status_Geral !== 'TRIAGEM')) && !isAdmin}
+  value={form.Prazo_Contrato}
+  onChange={(v:any) => setForm({...form, Prazo_Contrato: v})}
+/>
+
           </div>
 
           {(isEstoqueView || isPlanejamentoView || isComprasView || isEngenhariaView || isFinanceiroView || isLogisticaView) && (
