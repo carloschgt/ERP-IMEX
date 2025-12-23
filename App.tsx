@@ -12,15 +12,105 @@ import SuperAdminPanel from './components/SuperAdminPanel';
 import StockTVPanel from './components/StockTVPanel';
 import { User, UserRole, ViewType, ImportRecord, SLAConfig, Supplier } from './types';
 
+// =============================================================
+// LocalStorage Keys (centralizado)
+// =============================================================
+const STORAGE = {
+  RECORDS: 'imex_records',
+  SESSION_USER: 'imex_session_user',
+  SLAS: 'imex_slas',
+  SUPPLIERS: 'imex_suppliers',
+  USERS: 'imex_users',
+  TV_PROCESS: 'imex_tv_process',
+} as const;
+
+// =============================================================
+// Super User (demo / admin total)
+// =============================================================
 const SUPER_USER: User = {
   email: 'carlos.teixeira@imexsolutions.com.br',
   name: 'Carlos Teixeira',
   role: UserRole.SUPER_ADMIN,
   department: 'ADMIN',
-  lastLogin: new Date().toLocaleString('pt-BR'),
+  lastLogin: new Date().toLocaleString(),
   passwordChangedAt: new Date().toISOString(),
 };
 
+// =============================================================
+// Usuários de teste (USER) para validar travas do Patch2
+// Login deve usar imex_users + password para autenticar
+// =============================================================
+const TEST_PASSWORD = '1234';
+
+const DEFAULT_TEST_USERS: User[] = [
+  {
+    email: 'comercial@imexsolutions.com.br',
+    name: 'Teste Comercial',
+    role: UserRole.USER,
+    department: 'COMERCIAL',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+  {
+    email: 'estoque@imexsolutions.com.br',
+    name: 'Teste Estoque',
+    role: UserRole.USER,
+    department: 'ESTOQUE',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+  {
+    email: 'planejamento@imexsolutions.com.br',
+    name: 'Teste Planejamento',
+    role: UserRole.USER,
+    department: 'PLANEJAMENTO',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+  {
+    email: 'compras@imexsolutions.com.br',
+    name: 'Teste Compras',
+    role: UserRole.USER,
+    department: 'COMPRAS',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+  {
+    email: 'engenharia@imexsolutions.com.br',
+    name: 'Teste Engenharia',
+    role: UserRole.USER,
+    department: 'ENGENHARIA',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+  {
+    email: 'financeiro@imexsolutions.com.br',
+    name: 'Teste Financeiro',
+    role: UserRole.USER,
+    department: 'FINANCEIRO',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+  {
+    email: 'logistica@imexsolutions.com.br',
+    name: 'Teste Logistica',
+    role: UserRole.USER,
+    department: 'LOGISTICA',
+    password: TEST_PASSWORD,
+    lastLogin: '',
+    passwordChangedAt: new Date().toISOString(),
+  },
+];
+
+// =============================================================
+// Seeds / Sample data
+// =============================================================
 const SAMPLE_RECORDS: ImportRecord[] = [
   {
     id: 'sim-1',
@@ -150,14 +240,10 @@ const SAMPLE_RECORDS: ImportRecord[] = [
   },
 ];
 
-const STORAGE = {
-  SESSION_USER: 'imex_session_user',
-  RECORDS: 'imex_records',
-  SLAS: 'imex_slas',
-  SUPPLIERS: 'imex_suppliers',
-  TV_PROCESS: 'imex_tv_process',
-} as const;
-
+// =============================================================
+// TV param -> localStorage key usada pelo StockTVPanel
+// Aceita: ?tv=logistica | ?tv=comercial | etc.
+// =============================================================
 const TV_MAP = {
   comercial: 'COMERCIAL',
   estoque: 'ESTOQUE',
@@ -189,27 +275,16 @@ function persistTvProcess(p: TvProcess) {
   }
 }
 
-function normalizeRecord(r: any): ImportRecord {
-  const usuarioUlt =
-    r?.Usuario_Ult_Alteracao ??
-    r?.['Usuário_Ult_Alteracao'] ??
-    r?.['UsuÃ¡rio_Ult_Alteracao'] ??
-    'SISTEMA';
-
-  const base: ImportRecord = {
-    ...r,
-    Usuario_Ult_Alteracao: String(usuarioUlt),
-    Data_Ult_Alteracao: String(r?.Data_Ult_Alteracao ?? new Date().toLocaleString('pt-BR')),
-    auditTrail: Array.isArray(r?.auditTrail) ? r.auditTrail : [],
-    attachments: Array.isArray(r?.attachments) ? r.attachments : [],
-    paymentRequests: Array.isArray(r?.paymentRequests) ? r.paymentRequests : [],
-    paymentPlan: Array.isArray(r?.paymentPlan) ? r.paymentPlan : [],
-    pagamentosFornecedores: Array.isArray(r?.pagamentosFornecedores) ? r.pagamentosFornecedores : [],
-    itensPV: Array.isArray(r?.itensPV) ? r.itensPV : [],
-    SC: typeof r?.SC === 'string' ? r.SC : '',
-  };
-
-  return base;
+// =============================================================
+// Migration: se existir campo antigo acentuado no localStorage
+// copia para Usuario_Ult_Alteracao
+// =============================================================
+function migrateRecordAuditUserField(raw: any): ImportRecord {
+  const r: any = raw ?? {};
+  if (r.Usuario_Ult_Alteracao == null && r['Usuário_Ult_Alteracao'] != null) {
+    r.Usuario_Ult_Alteracao = r['Usuário_Ult_Alteracao'];
+  }
+  return r as ImportRecord;
 }
 
 const App: React.FC = () => {
@@ -220,28 +295,55 @@ const App: React.FC = () => {
   const [slas, setSlas] = useState<SLAConfig>({ estoque: 24, compras: 3, financeiro: 2, logistica: 45 });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // =============================================================
   // Sessao (persistencia local) + modo demo (?demo=1)
+  // =============================================================
   useEffect(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const demo = urlParams.get('demo') === '1';
+
       const savedUser = localStorage.getItem(STORAGE.SESSION_USER);
-      if (savedUser) setUser(JSON.parse(savedUser));
-      else if (demo) setUser(SUPER_USER);
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      } else if (demo) {
+        setUser(SUPER_USER);
+      }
     } catch {
       // ignore
     }
   }, []);
 
-  // Bootstrap: tv param + load localStorage
+  // =============================================================
+  // Bootstrap: seed users / tv / dados
+  // =============================================================
   useEffect(() => {
-    const tv = getTvProcessFromUrl(window.location.search);
-    if (tv) {
-      persistTvProcess(tv);
-      setCurrentView('ESTOQUE_TV');
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // 1) Seed usuarios de teste (se nao existir ou ?seedUsers=1)
+    const seedUsers = urlParams.get('seedUsers') === '1';
+    try {
+      const existing = localStorage.getItem(STORAGE.USERS);
+      if (!existing || seedUsers) {
+        localStorage.setItem(STORAGE.USERS, JSON.stringify(DEFAULT_TEST_USERS));
+      }
+    } catch {
+      // ignore
     }
 
-    // SLAs
+    // 2) TV por processo via querystring: ?tv=logistica etc
+    const tvProcess = getTvProcessFromUrl(window.location.search);
+    if (tvProcess) {
+      persistTvProcess(tvProcess);
+      setCurrentView('ESTOQUE_TV');
+    } else {
+      // compat antigo: ?tv=estoque (se você ainda usar em algum lugar)
+      if (urlParams.get('tv') === 'estoque') {
+        setCurrentView('ESTOQUE_TV');
+      }
+    }
+
+    // 3) Carrega SLAs
     try {
       const savedSlas = localStorage.getItem(STORAGE.SLAS);
       if (savedSlas) setSlas(JSON.parse(savedSlas));
@@ -249,7 +351,7 @@ const App: React.FC = () => {
       // ignore
     }
 
-    // Suppliers
+    // 4) Carrega Suppliers
     try {
       const savedSuppliers = localStorage.getItem(STORAGE.SUPPLIERS);
       if (savedSuppliers) {
@@ -268,15 +370,16 @@ const App: React.FC = () => {
       // ignore
     }
 
-    // Records (com migracao de chaves antigas)
+    // 5) Carrega Records (+ migra nome de campo antigo, se existir)
     try {
       const savedRecords = localStorage.getItem(STORAGE.RECORDS);
       if (savedRecords) {
         const parsed = JSON.parse(savedRecords);
-        const arr = Array.isArray(parsed) ? parsed : [];
-        const normalized = arr.map(normalizeRecord);
-        setRecords(normalized);
-        localStorage.setItem(STORAGE.RECORDS, JSON.stringify(normalized));
+        const migrated: ImportRecord[] = Array.isArray(parsed)
+          ? parsed.map(migrateRecordAuditUserField)
+          : [];
+        setRecords(migrated);
+        localStorage.setItem(STORAGE.RECORDS, JSON.stringify(migrated));
       } else {
         setRecords(SAMPLE_RECORDS);
         localStorage.setItem(STORAGE.RECORDS, JSON.stringify(SAMPLE_RECORDS));
@@ -290,12 +393,15 @@ const App: React.FC = () => {
       }
     }
 
+    // 6) Sync multi-abas
     const handleStorageSync = (e: StorageEvent) => {
       if (e.key === STORAGE.RECORDS && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          const arr = Array.isArray(parsed) ? parsed : [];
-          setRecords(arr.map(normalizeRecord));
+          const migrated: ImportRecord[] = Array.isArray(parsed)
+            ? parsed.map(migrateRecordAuditUserField)
+            : [];
+          setRecords(migrated);
         } catch {
           // ignore
         }
@@ -307,10 +413,9 @@ const App: React.FC = () => {
   }, []);
 
   const updateRecords = (newRecords: ImportRecord[]) => {
-    const normalized = newRecords.map(normalizeRecord);
-    setRecords(normalized);
+    setRecords(newRecords);
     try {
-      localStorage.setItem(STORAGE.RECORDS, JSON.stringify(normalized));
+      localStorage.setItem(STORAGE.RECORDS, JSON.stringify(newRecords));
     } catch {
       // ignore
     }
@@ -335,7 +440,7 @@ const App: React.FC = () => {
     if (u.role === UserRole.SUPER_ADMIN) return true;
     if (u.role === UserRole.ADMIN) return true;
 
-    // TV mode and dashboard are open
+    // sempre liberado
     if (v === 'DASHBOARD' || v === 'ESTOQUE_TV') return true;
 
     const map: Partial<Record<ViewType, User['department']>> = {
@@ -369,6 +474,7 @@ const App: React.FC = () => {
     }
 
     const allKeys = Array.from(new Set(records.flatMap(r => Object.keys(r as any))));
+
     const escape = (val: any) => {
       if (val === null || val === undefined) return '';
       const s = typeof val === 'object' ? JSON.stringify(val) : String(val);
@@ -400,8 +506,10 @@ const App: React.FC = () => {
     setCurrentView('DASHBOARD');
   };
 
+  // Se nao estiver logado e nao for TV, vai para Login
   if (!user && currentView !== 'ESTOQUE_TV') return <Login onLogin={handleLogin} />;
 
+  // TV mode (sem login)
   if (currentView === 'ESTOQUE_TV') {
     return <StockTVPanel records={records} slas={slas} onBack={() => setCurrentView('DASHBOARD')} />;
   }
@@ -429,7 +537,11 @@ const App: React.FC = () => {
       />
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
-        <Topbar user={user!} currentView={currentView} onMenuToggle={() => setIsMenuOpen(!isMenuOpen)} />
+        <Topbar
+          user={user!}
+          currentView={currentView}
+          onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        />
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
           <div className="max-w-[1600px] mx-auto pb-20">
@@ -449,9 +561,7 @@ const App: React.FC = () => {
               />
             )}
 
-            {['COMERCIAL', 'ESTOQUE', 'PLANEJAMENTO', 'COMPRAS', 'ENGENHARIA', 'FINANCEIRO', 'LOGISTICA'].includes(
-              currentView
-            ) && (
+            {['COMERCIAL', 'ESTOQUE', 'PLANEJAMENTO', 'COMPRAS', 'ENGENHARIA', 'FINANCEIRO', 'LOGISTICA'].includes(currentView) && (
               <DepartmentForms
                 key={currentView}
                 view={currentView as any}
@@ -478,7 +588,9 @@ const App: React.FC = () => {
               />
             )}
 
-            {currentView === 'SUPER_ADMIN_PANEL' && <SuperAdminPanel records={records} onUpdate={updateRecords} user={user!} />}
+            {currentView === 'SUPER_ADMIN_PANEL' && (
+              <SuperAdminPanel records={records} onUpdate={updateRecords} user={user!} />
+            )}
           </div>
         </main>
       </div>
