@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+coverage/
+
+.env
+.env.*
+*.log
+
+.vscode/
+!.vscode/extensions.json
+
+Thumbs.db
+.env.local
+imex---gestao-de-importacao_PATCHED_v3/
+imex---gestao-de-importacao_PATCHED_v3.zip
