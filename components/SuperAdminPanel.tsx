@@ -42,7 +42,7 @@ const SuperAdminPanel: React.FC<Props> = ({ records, onUpdate, user }) => {
             Data_Intervencao: now,
             Motivo_Intervencao: reason.toUpperCase(),
             Etapa_Reaberta: stage,
-            Usuário_Ult_Alteracao: `ADMIN: ${user.name}`,
+            Usuario_Ult_Alteracao: `ADMIN: ${user.name}`,
             Data_Ult_Alteracao: now
           };
 

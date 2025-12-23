@@ -75,7 +75,7 @@ const Records: React.FC<{ records: ImportRecord[]; setRecords: (records: ImportR
     const newRecord: ImportRecord = {
       ...(selectedRecord || { id: Date.now().toString() } as ImportRecord),
       ...form,
-      Usuário_Ult_Alteracao: user.name,
+      Usuario_Ult_Alteracao: user.name,
       Data_Ult_Alteracao: now
     } as ImportRecord;
 
@@ -160,7 +160,7 @@ const Records: React.FC<{ records: ImportRecord[]; setRecords: (records: ImportR
               <div className="w-10 h-10 rounded-xl bg-[#04816E]/20 flex items-center justify-center text-[#04816E]">{ICONS.Clock}</div>
               <div>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Última Modificação</p>
-                <p className="text-xs font-bold text-slate-300">{selectedRecord ? `${selectedRecord.Usuário_Ult_Alteracao} em ${selectedRecord.Data_Ult_Alteracao}` : 'Novo lançamento'}</p>
+                <p className="text-xs font-bold text-slate-300">{selectedRecord ? `${selectedRecord.Usuario_Ult_Alteracao} em ${selectedRecord.Data_Ult_Alteracao}` : 'Novo lançamento'}</p>
               </div>
             </div>
             <button onClick={handleSave} className="w-full md:w-64 py-4 bg-[#04816E] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl hover:brightness-110 transition-all">

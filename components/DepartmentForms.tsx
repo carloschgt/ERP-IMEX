@@ -381,7 +381,7 @@ const DepartmentForms: React.FC<Props> = ({ view, records, setRecords, user, sup
         paymentRequests: (form as any).paymentRequests || [],
         paymentPlan: (form as any).paymentPlan || [],
         pagamentosFornecedores: (form as any).pagamentosFornecedores || [],
-        Usuário_Ult_Alteracao: user.name,
+        Usuario_Ult_Alteracao: user.name,
         Data_Ult_Alteracao: now.toLocaleString(),
         Responsavel_Estoque: isEstoqueView ? user.name : (form as any).Responsavel_Estoque,
         Responsavel_Planejamento: isPlanejamentoView ? user.name : (form as any).Responsavel_Planejamento,

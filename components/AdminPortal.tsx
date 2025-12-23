@@ -28,7 +28,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ records, onImport }) => {
     "Data_Desembaraco", "Valor_FOB_USD", "Frete_Internacional_USD", "Unidade_RFB", 
     "Recinto_Aduaneiro", "DTA", "Data_DTA", "Recinto_Porto_Seco", "Observações", 
     "Status_Geral", "LeadTime_Previsto", "LeadTime_Real", "Reserva1", 
-    "Usuário_Ult_Alteracao", "Data_Ult_Alteracao"
+    "Usuario_Ult_Alteracao", "Data_Ult_Alteracao"
   ];
 
   useEffect(() => {

@@ -174,7 +174,7 @@ export interface ImportRecord {
 
   // KPIs & Auditoria Geral
   Status_Geral?: string;
-  Usuário_Ult_Alteracao: string;
+  Usuario_Ult_Alteracao: string;
   Data_Ult_Alteracao: string;
 
   // Itens Detalhados
