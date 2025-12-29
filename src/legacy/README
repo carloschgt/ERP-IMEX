@@ -1,0 +1,6 @@
+# Legacy
+
+Esta pasta é um adaptador para manter o app atual funcionando enquanto refatoramos por Feature Slices.
+
+- A Home atual continua no `App.tsx` (root).
+- O Router novo aponta para `LegacyHome` exportado em `src/legacy/index.ts`.
