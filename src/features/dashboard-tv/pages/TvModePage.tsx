@@ -23,13 +23,25 @@ const fallbackMockPVs: PVUnified[] = [
     pvNumber: "PV-TEST-ATENCAO",
     createdAtISO: new Date().toISOString(),
     currentOwnerDept: "COMPRAS",
-    steps: [{ stepKey: "COMPRAS", status: "Pendente", updatedAtISO: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() }],
+    steps: [
+      {
+        stepKey: "COMPRAS",
+        status: "Pendente",
+        updatedAtISO: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+      },
+    ],
   },
   {
     pvNumber: "PV-TEST-ATRASADO",
     createdAtISO: new Date().toISOString(),
     currentOwnerDept: "ENGENHARIA",
-    steps: [{ stepKey: "ENGENHARIA", status: "Pendente", updatedAtISO: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString() }],
+    steps: [
+      {
+        stepKey: "ENGENHARIA",
+        status: "Pendente",
+        updatedAtISO: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+      },
+    ],
   },
 ];
 
